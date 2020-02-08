@@ -149,3 +149,96 @@ function unsubscribeGuestbook(){
  }
 };
 
+// Listen to RSVP responses
+rsvpYes.onclick = () => {
+}
+rsvpNo.onclick = () => {
+}
+
+// Listen to RSVP responses
+rsvpYes.onclick = () => {
+ // Get a reference to the user's document in the attendees collection
+ const userDoc = firebase.firestore().collection('attendees').doc(firebase.auth().currentUser.uid);
+
+ // If they RSVP'd yes, save a document with attending: true
+ userDoc.set({
+   attending: true
+ }).catch(console.error)
+}
+
+rsvpNo.onclick = () => {
+ // Get a reference to the user's document in the attendees collection
+ const userDoc = firebase.firestore().collection('attendees').doc(firebase.auth().currentUser.uid);
+
+ // If they RSVP'd yes, save a document with attending: true
+ userDoc.set({
+   attending: false
+ }).catch(console.error)
+}
+
+// Listen for attendee list
+firebase.firestore()
+.collection('attendees')
+.where("attending", "==", true)
+.onSnapshot(snap => {
+ const newAttendeeCount = snap.docs.length;
+
+ numberAttending.innerHTML = newAttendeeCount+' people going'; 
+})
+
+// Listen for attendee list
+function subscribeCurrentRSVP(user){
+ rsvpListener = firebase.firestore()
+ .collection('attendees')
+ .doc(user.uid)
+ .onSnapshot((doc) => {
+   if (doc && doc.data()){
+     const attendingResponse = doc.data().attending;
+
+     // Update css classes for buttons
+     if (attendingResponse){
+       rsvpYes.className="clicked";
+       rsvpNo.className="";
+     }
+     else{
+       rsvpYes.className="";
+       rsvpNo.className="clicked";
+     }
+   }
+ });
+}
+
+function unsubscribeCurrentRSVP(){
+ if (rsvpListener != null)
+ {
+   rsvpListener();
+   rsvpListener = null;
+ }
+ rsvpYes.className="";
+ rsvpNo.className="";
+}
+
+// Listen to the current Auth state
+firebase.auth().onAuthStateChanged((user) => {
+if (user){
+  startRsvpButton.textContent = "LOGOUT";
+  // Show guestbook to logged-in users
+  guestbookContainer.style.display = "block";
+
+  // Subscribe to the guestbook collection
+  subscribeGuestbook();
+  // Subscribe to the guestbook collection
+  subscribeCurrentRSVP(user);
+}
+else{
+  startRsvpButton.textContent = "RSVP";
+  // Hide guestbook for non-logged-in users
+  guestbookContainer.style.display = "none";
+
+  // Unsubscribe from the guestbook collection
+  unsubscribeGuestbook();
+  // Unsubscribe from the guestbook collection
+  unsubscribeCurrentRSVP();
+
+}
+});
